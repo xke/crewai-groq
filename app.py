@@ -5,6 +5,8 @@ from crewai import Agent, Task, Crew
 from langchain_groq import ChatGroq
 import weave
 
+weave.init('crewai-groq')
+
 @weave.op()
 def main():
 
