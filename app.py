@@ -3,8 +3,9 @@ import pandas as pd
 import os
 from crewai import Agent, Task, Crew
 from langchain_groq import ChatGroq
+import weave
 
-
+@weave.op()
 def main():
 
     # Set up the customization options
