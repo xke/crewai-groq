@@ -8,9 +8,10 @@ import weave
 weave.init('crewai-groq')
 
 @weave.op()
-def log_inputs(model, user_question, uploaded_file):
+def log_run_info(model, user_question, uploaded_file, result):
     pass
 
+@weave.op()
 def main():
 
     # Set up the customization options
@@ -108,8 +109,6 @@ def main():
     data_upload = False
     uploaded_file = st.file_uploader("Upload a sample .csv of your data (optional)")
 
-    log_inputs(model, user_question, uploaded_file)
-
     if uploaded_file is not None:
         try:
             # Attempt to read the uploaded file as a DataFrame
@@ -197,6 +196,8 @@ def main():
         result = crew.kickoff()
 
         st.write(result)
+
+        log_run_info(model, user_question, uploaded_file, result)
 
 
 if __name__ == "__main__":
