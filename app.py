@@ -9,7 +9,7 @@ weave.init('crewai-groq')
 
 @weave.op()
 def log_run_info(model, user_question, uploaded_file, result):
-    pass
+    return result
 
 @weave.op()
 def main():
