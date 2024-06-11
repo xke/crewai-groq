@@ -8,6 +8,9 @@ import weave
 weave.init('crewai-groq')
 
 @weave.op()
+def log_inputs(model, user_question, uploaded_file):
+    pass
+
 def main():
 
     # Set up the customization options
@@ -104,6 +107,9 @@ def main():
     user_question = st.text_input("Describe your ML problem:")
     data_upload = False
     uploaded_file = st.file_uploader("Upload a sample .csv of your data (optional)")
+
+    log_inputs(model, user_question, uploaded_file)
+
     if uploaded_file is not None:
         try:
             # Attempt to read the uploaded file as a DataFrame
