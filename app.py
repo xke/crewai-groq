@@ -5,9 +5,9 @@ from crewai import Agent, Task, Crew
 from langchain_groq import ChatGroq
 import weave
 
-weave.init('crewai-groq')
+#weave.init('crewai-groq')
 
-@weave.op()
+#@weave.op()
 def run_crew(model, user_question, uploaded_file,
               Problem_Definition_Agent, Data_Assessment_Agent, Model_Recommendation_Agent,  Starter_Code_Generator_Agent):
 
