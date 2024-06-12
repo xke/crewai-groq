@@ -8,10 +8,108 @@ import weave
 weave.init('crewai-groq')
 
 @weave.op()
-def log_run_info(model, user_question, uploaded_file, result):
-    return result
+def run_crew(model, user_question, uploaded_file,
+              Problem_Definition_Agent, Data_Assessment_Agent, Model_Recommendation_Agent,  Starter_Code_Generator_Agent):
 
-@weave.op()
+    # passing in "model" for logging purposes
+
+    data_upload = False
+    if uploaded_file is not None:
+        try:
+            # Attempt to read the uploaded file as a DataFrame
+            df = pd.read_csv(uploaded_file).head(5)
+            
+            # If successful, set 'data_upload' to True
+            data_upload = True
+            
+            # Display the DataFrame in the app
+            st.write("Data successfully uploaded and read as DataFrame:")
+            st.dataframe(df)
+        except Exception as e:
+            st.error(f"Error reading the file: {e}")
+
+    if user_question:
+
+        task_define_problem = Task(
+        description="""Clarify and define the machine learning problem, 
+            including identifying the problem type and specific requirements.
+            
+            Here is the user's problem:
+
+            {ml_problem}
+            """.format(ml_problem=user_question),
+        agent=Problem_Definition_Agent,
+        expected_output="A clear and concise definition of the machine learning problem."
+        )
+
+        if data_upload:
+            task_assess_data = Task(
+                description="""Evaluate the user's data for quality and suitability, 
+                suggesting preprocessing or augmentation steps if needed.
+                
+                Here is a sample of the user's data:
+
+                {df}
+
+                The file name is called {uploaded_file}
+                
+                """.format(df=df.head(),uploaded_file=uploaded_file),
+                agent=Data_Assessment_Agent,
+                expected_output="An assessment of the data's quality and suitability, with suggestions for preprocessing or augmentation if necessary."
+            )
+        else:
+            task_assess_data = Task(
+                description="""The user has not uploaded any specific data for this problem,
+                but please go ahead and consider a hypothetical dataset that might be useful
+                for their machine learning problem. 
+                """,
+                agent=Data_Assessment_Agent,
+                expected_output="A hypothetical dataset that might be useful for the user's machine learning problem, along with any necessary preprocessing steps."
+            )
+
+        task_recommend_model = Task(
+        description="""Suggest suitable machine learning models for the defined problem 
+            and assessed data, providing rationale for each suggestion.""",
+        agent=Model_Recommendation_Agent,
+        expected_output="A list of suitable machine learning models for the defined problem and assessed data, along with the rationale for each suggestion."
+        )
+
+
+        task_generate_code = Task(
+        description="""Generate starter Python code tailored to the user's project using the model recommendation agent's recommendation(s), 
+            including snippets for package import, data handling, model definition, and training
+            """,
+        agent=Starter_Code_Generator_Agent,
+        expected_output="Python code snippets for package import, data handling, model definition, and training, tailored to the user's project, plus a brief summary of the problem and model recommendations."
+        )
+
+        # task_summarize = Task(
+        #     description="""
+        #     Summarize the results of the problem definition, data assessment, model recommendation and starter code generator.
+        #     Keep the summarization brief and don't forget to share the entirety of the starter code!
+        #     """,
+        #     agent=Summarization_Agent
+        # )
+
+
+        crew = Crew(
+            agents=[Problem_Definition_Agent, Data_Assessment_Agent, Model_Recommendation_Agent,  Starter_Code_Generator_Agent], #, Summarization_Agent],
+            tasks=[task_define_problem, task_assess_data, task_recommend_model,  task_generate_code], #, task_summarize],
+            verbose=2
+        )
+
+        result = crew.kickoff()
+
+        return result
+
+    return 
+
+
+#@weave.op()
+#def log_run_info(model, user_question, uploaded_file, result):
+#    pass #no-op
+
+#@weave.op()
 def main():
 
     # Set up the customization options
@@ -106,98 +204,14 @@ def main():
     # )
 
     user_question = st.text_input("Describe your ML problem:")
-    data_upload = False
     uploaded_file = st.file_uploader("Upload a sample .csv of your data (optional)")
 
-    if uploaded_file is not None:
-        try:
-            # Attempt to read the uploaded file as a DataFrame
-            df = pd.read_csv(uploaded_file).head(5)
-            
-            # If successful, set 'data_upload' to True
-            data_upload = True
-            
-            # Display the DataFrame in the app
-            st.write("Data successfully uploaded and read as DataFrame:")
-            st.dataframe(df)
-        except Exception as e:
-            st.error(f"Error reading the file: {e}")
+    result = run_crew(model, user_question, uploaded_file,
+                       Problem_Definition_Agent, Data_Assessment_Agent, Model_Recommendation_Agent,  Starter_Code_Generator_Agent)
+    
+    st.write(result)
 
-    if user_question:
-
-        task_define_problem = Task(
-        description="""Clarify and define the machine learning problem, 
-            including identifying the problem type and specific requirements.
-            
-            Here is the user's problem:
-
-            {ml_problem}
-            """.format(ml_problem=user_question),
-        agent=Problem_Definition_Agent,
-        expected_output="A clear and concise definition of the machine learning problem."
-        )
-
-        if data_upload:
-            task_assess_data = Task(
-                description="""Evaluate the user's data for quality and suitability, 
-                suggesting preprocessing or augmentation steps if needed.
-                
-                Here is a sample of the user's data:
-
-                {df}
-
-                The file name is called {uploaded_file}
-                
-                """.format(df=df.head(),uploaded_file=uploaded_file),
-                agent=Data_Assessment_Agent,
-                expected_output="An assessment of the data's quality and suitability, with suggestions for preprocessing or augmentation if necessary."
-            )
-        else:
-            task_assess_data = Task(
-                description="""The user has not uploaded any specific data for this problem,
-                but please go ahead and consider a hypothetical dataset that might be useful
-                for their machine learning problem. 
-                """,
-                agent=Data_Assessment_Agent,
-                expected_output="A hypothetical dataset that might be useful for the user's machine learning problem, along with any necessary preprocessing steps."
-            )
-
-        task_recommend_model = Task(
-        description="""Suggest suitable machine learning models for the defined problem 
-            and assessed data, providing rationale for each suggestion.""",
-        agent=Model_Recommendation_Agent,
-        expected_output="A list of suitable machine learning models for the defined problem and assessed data, along with the rationale for each suggestion."
-        )
-
-
-        task_generate_code = Task(
-        description="""Generate starter Python code tailored to the user's project using the model recommendation agent's recommendation(s), 
-            including snippets for package import, data handling, model definition, and training
-            """,
-        agent=Starter_Code_Generator_Agent,
-        expected_output="Python code snippets for package import, data handling, model definition, and training, tailored to the user's project, plus a brief summary of the problem and model recommendations."
-        )
-
-        # task_summarize = Task(
-        #     description="""
-        #     Summarize the results of the problem definition, data assessment, model recommendation and starter code generator.
-        #     Keep the summarization brief and don't forget to share the entirety of the starter code!
-        #     """,
-        #     agent=Summarization_Agent
-        # )
-
-
-        crew = Crew(
-            agents=[Problem_Definition_Agent, Data_Assessment_Agent, Model_Recommendation_Agent,  Starter_Code_Generator_Agent], #, Summarization_Agent],
-            tasks=[task_define_problem, task_assess_data, task_recommend_model,  task_generate_code], #, task_summarize],
-            verbose=2
-        )
-
-        result = crew.kickoff()
-
-        st.write(result)
-
-        log_run_info(model, user_question, uploaded_file, result)
+    #log_run_info(model, user_question, uploaded_file, result)
 
 
 if __name__ == "__main__":
